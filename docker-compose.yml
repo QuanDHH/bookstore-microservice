@@ -1,0 +1,253 @@
+version: "3.9"
+
+services:
+
+  # ──────────────────────────────────────────────
+  # API Gateway  (Django + DRF reverse proxy)
+  # ──────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: "change-me-in-production"
+      DEBUG: "false"
+      STAFF_SERVICE_URL:    http://staff-service:8001
+      CUSTOMER_SERVICE_URL: http://customer-service:8002
+      CART_SERVICE_URL:     http://cart-service:8003
+      LAPTOP_SERVICE_URL:   http://laptop-service:8004
+      CLOTHES_SERVICE_URL:  http://clothes-service:8005
+    depends_on:
+      - staff-service
+      - customer-service
+      - cart-service
+      - laptop-service
+      - clothes-service
+    networks:
+      - micronet
+
+  # ──────────────────────────────────────────────
+  # staff-service  →  MySQL
+  # ──────────────────────────────────────────────
+  staff-db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: staff_db
+      MYSQL_USER: staff_user
+      MYSQL_PASSWORD: staff_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    volumes:
+      - staff_db_data:/var/lib/mysql
+    networks:
+      - micronet
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+
+  staff-service:
+    build:
+      context: ./staff-service
+      dockerfile: Dockerfile
+    environment:
+      DB_ENGINE: django.db.backends.mysql
+      DB_NAME: staff_db
+      DB_USER: staff_user
+      DB_PASSWORD: staff_pass
+      DB_HOST: staff-db
+      DB_PORT: 3306
+    depends_on:
+      staff-db:
+        condition: service_healthy
+    networks:
+      - micronet
+    expose:
+      - "8001"
+
+  # ──────────────────────────────────────────────
+  # customer-service  →  MySQL
+  # ──────────────────────────────────────────────
+  customer-db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: customer_db
+      MYSQL_USER: customer_user
+      MYSQL_PASSWORD: customer_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    volumes:
+      - customer_db_data:/var/lib/mysql
+    networks:
+      - micronet
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "customer_user", "-pcustomer_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  customer-service:
+    build:
+      context: ./customer-service
+      dockerfile: Dockerfile
+    environment:
+      DB_ENGINE: django.db.backends.mysql
+      DB_NAME: customer_db
+      DB_USER: customer_user
+      DB_PASSWORD: customer_pass
+      DB_HOST: customer-db
+      DB_PORT: 3306
+    depends_on:
+      customer-db:
+        condition: service_healthy
+    networks:
+      - micronet
+    expose:
+      - "8002"
+
+  # ──────────────────────────────────────────────
+  # cart-service  →  PostgreSQL
+  # ──────────────────────────────────────────────
+  cart-db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: cart_db
+      POSTGRES_USER: cart_user
+      POSTGRES_PASSWORD: cart_pass
+    volumes:
+      - cart_db_data:/var/lib/postgresql/data
+    networks:
+      - micronet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cart_user -d cart_db"]
+      interval: 10s
+      retries: 5
+
+  cart-service:
+    build:
+      context: ./cart-service
+      dockerfile: Dockerfile
+    environment:
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: cart_db
+      DB_USER: cart_user
+      DB_PASSWORD: cart_pass
+      DB_HOST: cart-db
+      DB_PORT: 5432
+    depends_on:
+      cart-db:
+        condition: service_healthy
+    networks:
+      - micronet
+    expose:
+      - "8003"
+
+  # ──────────────────────────────────────────────
+  # laptop-service  →  PostgreSQL
+  # ──────────────────────────────────────────────
+  laptop-db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: laptop_db
+      POSTGRES_USER: laptop_user
+      POSTGRES_PASSWORD: laptop_pass
+    volumes:
+      - laptop_db_data:/var/lib/postgresql/data
+    networks:
+      - micronet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U laptop_user -d laptop_db"]
+      interval: 10s
+      retries: 5
+
+  laptop-service:
+    build:
+      context: ./laptop-service
+      dockerfile: Dockerfile
+    environment:
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: laptop_db
+      DB_USER: laptop_user
+      DB_PASSWORD: laptop_pass
+      DB_HOST: laptop-db
+      DB_PORT: 5432
+    depends_on:
+      laptop-db:
+        condition: service_healthy
+    networks:
+      - micronet
+    expose:
+      - "8004"
+
+  # ──────────────────────────────────────────────
+  # clothes-service  →  PostgreSQL
+  # ──────────────────────────────────────────────
+  clothes-db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: clothes_db
+      POSTGRES_USER: clothes_user
+      POSTGRES_PASSWORD: clothes_pass
+    volumes:
+      - clothes_db_data:/var/lib/postgresql/data
+    networks:
+      - micronet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clothes_user -d clothes_db"]
+      interval: 10s
+      retries: 5
+
+  clothes-service:
+    build:
+      context: ./clothes-service
+      dockerfile: Dockerfile
+    environment:
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: clothes_db
+      DB_USER: clothes_user
+      DB_PASSWORD: clothes_pass
+      DB_HOST: clothes-db
+      DB_PORT: 5432
+    depends_on:
+      clothes-db:
+        condition: service_healthy
+    networks:
+      - micronet
+    expose:
+      - "8005"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api-gateway
+    networks:
+      - micronet
+    volumes:
+      - ./frontend/src:/app/src   # hot-reload: changes in src/ reflect instantly
+
+# ──────────────────────────────────────────────
+networks:
+  micronet:
+    driver: bridge
+
+volumes:
+  staff_db_data:
+  customer_db_data:
+  cart_db_data:
+  laptop_db_data:
+  clothes_db_data:
+
+# Add this service to your existing docker-compose.yml
+# under the `services:` section, alongside the others
+
+  

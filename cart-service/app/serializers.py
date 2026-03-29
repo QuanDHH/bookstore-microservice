@@ -1,0 +1,42 @@
+from rest_framework import serializers
+from .models import Cart, CartItem
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    subtotal = serializers.DecimalField(
+        max_digits=12, decimal_places=2, read_only=True
+    )
+
+    class Meta:
+        model = CartItem
+        fields = [
+            "id", "product_id", "product_name",
+            "quantity", "price", "subtotal", "added_at",
+        ]
+        read_only_fields = ["id", "added_at", "subtotal"]
+
+
+class AddItemSerializer(serializers.Serializer):
+    product_id   = serializers.IntegerField()
+    product_name = serializers.CharField(max_length=255)
+    quantity     = serializers.IntegerField(min_value=1)
+    price        = serializers.DecimalField(max_digits=12, decimal_places=2)
+
+
+class RemoveItemSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField()
+
+
+class CartSerializer(serializers.ModelSerializer):
+    items       = CartItemSerializer(many=True, read_only=True)
+    total_price = serializers.DecimalField(
+        max_digits=12, decimal_places=2, read_only=True
+    )
+
+    class Meta:
+        model = Cart
+        fields = [
+            "id", "customer_id", "items",
+            "total_price", "created_at", "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
