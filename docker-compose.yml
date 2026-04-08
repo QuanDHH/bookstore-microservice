@@ -19,12 +19,14 @@ services:
       CART_SERVICE_URL:     http://cart-service:8003
       LAPTOP_SERVICE_URL:   http://laptop-service:8004
       CLOTHES_SERVICE_URL:  http://clothes-service:8005
+      MOBILE_SERVICE_URL: http://mobile-service:8006
     depends_on:
       - staff-service
       - customer-service
       - cart-service
       - laptop-service
       - clothes-service
+      - mobile-service
     networks:
       - micronet
 
@@ -222,6 +224,41 @@ services:
     expose:
       - "8005"
 
+  mobile-db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: mobile_db
+      POSTGRES_USER: mobile_user
+      POSTGRES_PASSWORD: mobile_pass
+    volumes:
+      - mobile_db_data:/var/lib/postgresql/data
+    networks:
+      - micronet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mobile_user -d mobile_db"]
+      interval: 10s
+      retries: 5
+    
+  mobile-service:
+    build:
+      context: ./mobile-service
+      dockerfile: Dockerfile
+    environment:
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: mobile_db
+      DB_USER: mobile_user
+      DB_PASSWORD: mobile_pass
+      DB_HOST: mobile-db
+      DB_PORT: 5432
+    depends_on:
+      mobile-db:
+        condition: service_healthy
+    networks:
+      - micronet
+    expose:
+      - "8006"  
+
   frontend:
     build:
       context: ./frontend
@@ -246,6 +283,7 @@ volumes:
   cart_db_data:
   laptop_db_data:
   clothes_db_data:
+  mobile_db_data:
 
 # Add this service to your existing docker-compose.yml
 # under the `services:` section, alongside the others

@@ -66,6 +66,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 # ── Inter-service URLs ────────────────────────────────────────────────────────
 LAPTOP_SERVICE_URL  = os.getenv("LAPTOP_SERVICE_URL",  "http://laptop-service:8004")
 CLOTHES_SERVICE_URL = os.getenv("CLOTHES_SERVICE_URL", "http://clothes-service:8005")
+MOBILE_SERVICE_URL = os.getenv("MOBILE_SERVICE_URL", "http://mobile-service:8006")
 
 # ── Misc ──────────────────────────────────────────────────────────────────────
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

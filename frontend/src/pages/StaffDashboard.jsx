@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 
 const LAPTOP_DEFAULTS  = { name: '', brand: '', cpu: '', ram: '', price: '', stock: '' }
 const CLOTHES_DEFAULTS = { name: '', brand: '', category: 'shirt', size: 'M', price: '', stock: '' }
+const MOBILE_DEFAULTS = { name: '', brand: '', ram: '', storage: '', battery: '', price: '', stock: '' }
 
 function LaptopForm({ initial, onSubmit, loading }) {
   const [form, setForm] = useState(initial || LAPTOP_DEFAULTS)
@@ -68,12 +69,40 @@ function ClothesForm({ initial, onSubmit, loading }) {
   )
 }
 
+function MobileForm({ initial, onSubmit, loading }) {
+  const [form, setForm] = useState(initial || MOBILE_DEFAULTS)
+  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
+  const handleSubmit = e => { e.preventDefault(); onSubmit(form) }
+
+  return (
+    <form onSubmit={handleSubmit} className="product-form">
+      <div className="form-row">
+        <div className="form-group"><label>Name</label><input value={form.name} onChange={set('name')} required /></div>
+        <div className="form-group"><label>Brand</label><input value={form.brand} onChange={set('brand')} required /></div>
+      </div>
+      <div className="form-row">
+        <div className="form-group"><label>RAM (GB)</label><input type="number" value={form.ram} onChange={set('ram')} required /></div>
+        <div className="form-group"><label>Storage (GB)</label><input type="number" value={form.storage} onChange={set('storage')} required /></div>
+      </div>
+      <div className="form-row">
+        <div className="form-group"><label>Battery (mAh)</label><input type="number" value={form.battery} onChange={set('battery')} required /></div>
+        <div className="form-group"><label>Price ($)</label><input type="number" step="0.01" value={form.price} onChange={set('price')} required /></div>
+      </div>
+      <div className="form-group"><label>Stock</label><input type="number" value={form.stock} onChange={set('stock')} required /></div>
+      <button type="submit" className="btn btn-primary" disabled={loading}>
+        {loading ? <span className="spinner" /> : (initial ? 'Update mobile' : 'Add mobile')}
+      </button>
+    </form>
+  )
+}
+
 export default function StaffDashboard() {
   const { staff }         = useAuth()
   const navigate          = useNavigate()
   const [view, setView]   = useState('laptops-list')
   const [laptops, setLaptops]   = useState([])
   const [clothes, setClothes]   = useState([])
+  const [mobiles, setMobiles]   = useState([])
   const [editing, setEditing]   = useState(null)
   const [loading, setLoading]   = useState(false)
   const [toast, setToast]       = useState('')
@@ -83,6 +112,7 @@ export default function StaffDashboard() {
   useEffect(() => {
     if (view === 'laptops-list')  getLaptops().then(r => setLaptops(r.data.results || []))
     if (view === 'clothes-list')  getClothes().then(r => setClothes(r.data.results || []))
+    if (view === 'mobiles-list') getMobiles().then(r => setMobiles(r.data.results || []))
   }, [view])
 
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(''), 2500) }
@@ -109,9 +139,22 @@ export default function StaffDashboard() {
     } finally { setLoading(false) }
   }
 
+  const handleMobileSubmit = async (form) => {
+    setLoading(true)
+    try {
+      if (editing) { await updateMobile(editing.id, form); showToast('Mobile updated') }
+      else         { await createMobile(form);              showToast('Mobile added') }
+      setView('mobiles-list'); setEditing(null)
+    } catch (err) {
+      showToast(err.response?.data?.detail || 'Error saving mobile')
+    } finally { setLoading(false) }
+  }
+
   const startEdit = (item, type) => {
     setEditing(item)
-    setView(type === 'laptop' ? 'laptops-form' : 'clothes-form')
+    if (type === 'laptop')      setView('laptops-form')
+    else if (type === 'mobile') setView('mobiles-form')
+    else                        setView('clothes-form')
   }
 
   return (
@@ -125,6 +168,11 @@ export default function StaffDashboard() {
             <h2 style={{ marginTop: 20 }}>Clothes</h2>
             <button className={`sidebar-item ${view === 'clothes-list' ? 'active' : ''}`} onClick={() => { setView('clothes-list'); setEditing(null) }}>All clothes</button>
             <button className={`sidebar-item ${view === 'clothes-form' && !editing ? 'active' : ''}`} onClick={() => { setView('clothes-form'); setEditing(null) }}>Add clothes</button>
+            <h2 style={{ marginTop: 20 }}>Mobiles</h2>
+            <button className={`sidebar-item ${view === 'mobiles-list' ? 'active' : ''}`}
+              onClick={() => { setView('mobiles-list'); setEditing(null) }}>All mobiles</button>
+            <button className={`sidebar-item ${view === 'mobiles-form' && !editing ? 'active' : ''}`}
+              onClick={() => { setView('mobiles-form'); setEditing(null) }}>Add mobile</button>
           </aside>
 
           <main className="staff-content">
@@ -177,6 +225,32 @@ export default function StaffDashboard() {
               <>
                 <h2>{editing ? 'Edit clothes' : 'Add clothes'}</h2>
                 <ClothesForm initial={editing} onSubmit={handleClothesSubmit} loading={loading} />
+              </>
+            )}
+
+            {view === 'mobiles-list' && (
+              <>
+                <h2>Mobiles</h2>
+                <table className="product-table">
+                  <thead><tr><th>Name</th><th>Brand</th><th>RAM</th><th>Storage</th><th>Battery</th><th>Price</th><th>Stock</th><th></th></tr></thead>
+                  <tbody>
+                    {mobiles.map(m => (
+                      <tr key={m.id}>
+                        <td>{m.name}</td><td>{m.brand}</td><td>{m.ram}GB</td>
+                        <td>{m.storage}GB</td><td>{m.battery}mAh</td><td>${m.price}</td><td>{m.stock}</td>
+                        <td><button className="btn btn-secondary btn-sm" onClick={() => startEdit(m, 'mobile')}>Edit</button></td>
+                      </tr>
+                    ))}
+                    {mobiles.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--muted)', padding: '32px 0' }}>No mobiles yet.</td></tr>}
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            {view === 'mobiles-form' && (
+              <>
+                <h2>{editing ? 'Edit mobile' : 'Add mobile'}</h2>
+                <MobileForm initial={editing} onSubmit={handleMobileSubmit} loading={loading} />
               </>
             )}
           </main>

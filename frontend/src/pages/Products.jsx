@@ -33,6 +33,11 @@ function ProductCard({ product, onAddToCart, type }) {
             {product.category} · Size {product.size}
           </div>
         )}
+        {type === 'mobile' && (
+          <div style={{ fontSize: '.8rem', color: 'var(--muted)', marginBottom: 10 }}>
+            {product.ram}GB RAM · {product.storage}GB · {product.battery}mAh
+          </div>
+        )}
         <div className="product-card-footer">
           <span className="product-price">${product.price}</span>
           <span className={`badge ${product.stock > 0 ? 'badge-green' : 'badge-red'}`}>
@@ -72,8 +77,12 @@ export default function Products() {
       if (maxPrice) params.max_price = maxPrice
       if (category && tab === 'clothes') params.category = category
 
-      const { data } = tab === 'laptops' ? await getLaptops(params) : await getClothes(params)
-      setProducts(data.results || [])
+      let response
+      if (tab === 'laptops')      response = await getLaptops(params)
+      else if (tab === 'mobiles') response = await getMobiles(params)
+      else                        response = await getClothes(params)
+
+      setProducts(response.data.results || [])
     } catch {
       setProducts([])
     } finally {
@@ -111,7 +120,8 @@ export default function Products() {
           <div className="filters">
             <div className="tab-group">
               <button className={tab === 'laptops' ? 'active' : ''} onClick={() => { setTab('laptops'); setCategory('') }}>Laptops</button>
-              <button className={tab === 'clothes' ? 'active' : ''} onClick={() => setTab('clothes')}>Clothes</button>
+              <button className={tab === 'mobiles'  ? 'active' : ''} onClick={() => setTab('mobiles')}>Mobiles</button>
+              <button className={tab === 'clothes'  ? 'active' : ''} onClick={() => setTab('clothes')}>Clothes</button>
             </div>
             <input className="filter-input" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
             <input className="filter-input" placeholder="Min price" type="number" value={minPrice} onChange={e => setMinPrice(e.target.value)} style={{ width: 110 }} />
@@ -134,7 +144,7 @@ export default function Products() {
         ) : (
           <div className="product-grid">
             {products.map(p => (
-              <ProductCard key={p.id} product={p} type={tab === 'laptops' ? 'laptop' : 'clothes'} onAddToCart={handleAddToCart} />
+              <ProductCard key={p.id} product={p} type={tab === 'laptops' ? 'laptop' : tab === 'mobiles' ? 'mobile' : 'clothes'} onAddToCart={handleAddToCart} />
             ))}
           </div>
         )}

@@ -59,3 +59,14 @@ def update_clothes(clothes_id, data, files=None, partial=False):
     url = f"{settings.CLOTHES_SERVICE_URL}/api/clothes/{clothes_id}/"
     method = "PATCH" if partial else "PUT"
     return _forward(method, url, data=data, files=files)
+
+# ── Mobile ───────────────────────────────────────────────────────────────────
+
+def create_mobile(data, files=None):
+    url = f"{settings.MOBILE_SERVICE_URL}/api/mobiles/"
+    return _forward("POST", url, data=data, files=files)
+
+def update_mobile(mobile_id, data, files=None, partial=False):
+    url = f"{settings.MOBILE_SERVICE_URL}/api/mobiles/{mobile_id}/"
+    method = "PATCH" if partial else "PUT"
+    return _forward(method, url, data=data, files=files)

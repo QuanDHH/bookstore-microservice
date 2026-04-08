@@ -43,10 +43,13 @@ export const staffLogin    = d => api.post('/staff/login/', d)
 // ── Products ──────────────────────────────────────────────────────────────────
 export const getLaptops  = params => api.get('/laptops/', { params })
 export const getClothes  = params => api.get('/clothes/', { params })
+export const getMobiles  = params => api.get('/mobiles/', { params })
 export const createLaptop  = d => api.post('/staff/products/laptops/', d)
 export const updateLaptop  = (id, d) => api.patch(`/staff/products/laptops/${id}/`, d)
 export const createClothes = d => api.post('/staff/products/clothes/', d)
 export const updateClothes = (id, d) => api.patch(`/staff/products/clothes/${id}/`, d)
+export const createMobile  = d => api.post('/staff/products/mobiles/', d)
+export const updateMobile  = (id, d) => api.patch(`/staff/products/mobiles/${id}/`, d)
 
 // ── Cart ──────────────────────────────────────────────────────────────────────
 export const getCart     = id  => api.get(`/carts/${id}/`)
