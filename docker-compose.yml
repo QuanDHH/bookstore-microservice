@@ -20,6 +20,7 @@ services:
       LAPTOP_SERVICE_URL:   http://laptop-service:8004
       CLOTHES_SERVICE_URL:  http://clothes-service:8005
       MOBILE_SERVICE_URL: http://mobile-service:8006
+      RECOMMENDATION_SERVICE_URL: http://recommendation-service:8007
     depends_on:
       - staff-service
       - customer-service
@@ -27,6 +28,7 @@ services:
       - laptop-service
       - clothes-service
       - mobile-service
+      - recommendation-service
     networks:
       - micronet
 
@@ -257,7 +259,47 @@ services:
     networks:
       - micronet
     expose:
-      - "8006"  
+      - "8006"
+
+  # ──────────────────────────────────────────────
+  # recommendation-service  →  PostgreSQL
+  # ──────────────────────────────────────────────
+  recommendation-db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: recommendation_db
+      POSTGRES_USER: recommendation_user
+      POSTGRES_PASSWORD: recommendation_pass
+    volumes:
+      - recommendation_db_data:/var/lib/postgresql/data
+    networks:
+      - micronet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recommendation_user -d recommendation_db"]
+      interval: 10s
+      retries: 5
+
+  recommendation-service:
+    build:
+      context: ./recommendation-service
+      dockerfile: Dockerfile
+    environment:
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: recommendation_db
+      DB_USER: recommendation_user
+      DB_PASSWORD: recommendation_pass
+      DB_HOST: recommendation-db
+      DB_PORT: 5432
+      SECRET_KEY: "change-me-in-production"
+      DEBUG: "false"
+    depends_on:
+      recommendation-db:
+        condition: service_healthy
+    networks:
+      - micronet
+    expose:
+      - "8007"
 
   frontend:
     build:
@@ -284,6 +326,7 @@ volumes:
   laptop_db_data:
   clothes_db_data:
   mobile_db_data:
+  recommendation_db_data:
 
 # Add this service to your existing docker-compose.yml
 # under the `services:` section, alongside the others

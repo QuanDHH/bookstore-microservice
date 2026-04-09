@@ -54,6 +54,7 @@ SERVICE_URLS = {
     "laptop": os.getenv("LAPTOP_SERVICE_URL", "http://laptop-service:8004"),
     "clothes": os.getenv("CLOTHES_SERVICE_URL", "http://clothes-service:8005"),
     "mobiles": os.getenv("MOBILE_SERVICE_URL", "http://mobile-service:8006"),
+    "recommendations": os.getenv("RECOMMENDATION_SERVICE_URL", "http://recommendation-service:8007"),
 }
 
 SERVICE_PATHS = {
@@ -62,4 +63,5 @@ SERVICE_PATHS = {
     "cart": "api/carts",
     "laptop": "api/laptops",
     "clothes": "api/clothes",
+    "recommendations": "api/recommendations",
 }
